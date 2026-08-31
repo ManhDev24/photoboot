@@ -14,6 +14,14 @@ window.PhotoboothARRenderer = {
     }
   },
 
+  setVideoFilter: function(filterCss) {
+    const videoElements = document.getElementsByTagName('video');
+    for (let i = 0; i < videoElements.length; i++) {
+      videoElements[i].style.filter = filterCss || 'none';
+      videoElements[i].style.webkitFilter = filterCss || 'none';
+    }
+  },
+
   spawnHeartParticles: function(count) {
     this.particles = [];
     for (let i = 0; i < count; i++) {
