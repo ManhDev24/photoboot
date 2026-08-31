@@ -165,14 +165,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
           const SizedBox(width: 12),
         ],
       ),
-      body: Stack(
-        children: [
-          Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 768;
+          return Stack(
             children: [
-              // Main Camera Preview (Left/Center Column)
-              Expanded(
-                flex: 3,
-                child: Column(
+              Flex(
+                direction: isMobile ? Axis.vertical : Axis.horizontal,
+                children: [
+                  // Main Camera Preview (Left/Center Column)
+                  Expanded(
+                    flex: isMobile ? 2 : 3,
+                    child: Column(
                   children: [
                     Expanded(
                       child: Container(
@@ -482,8 +486,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
           if (session.status == SessionStatus.countingDown)
             CountdownOverlay(count: sessionNotifier.countdownRemaining),
         ],
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 
   Widget _buildCameraPreview() {
