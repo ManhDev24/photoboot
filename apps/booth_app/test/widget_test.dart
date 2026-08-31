@@ -10,6 +10,6 @@ void main() {
       ),
     );
 
-    expect(find.text('PHOTO BOOTH PLATFORM'), findsOneWidget);
+    expect(find.text('PHOTOISM PLATFORM'), findsOneWidget);
   });
 }
