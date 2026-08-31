@@ -27,7 +27,17 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   late CameraService _cameraService;
   bool _isInitCompleted = false;
   String _selectedColorFilterId = 'original';
+  String _selectedBeautyModeId = 'beauty_natural';
+  double _beautyIntensity = 0.5;
   Color _selectedFrameColor = Colors.white;
+
+  final List<Map<String, dynamic>> _beautyModes = [
+    {'id': 'off', 'name': 'Beauty Off', 'icon': '🚫', 'matrix': <double>[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]},
+    {'id': 'beauty_natural', 'name': 'Natural Skin', 'icon': '🌸', 'matrix': <double>[1.1, 0.04, 0.04, 0.0, 10.0, 0.04, 1.08, 0.04, 0.0, 8.0, 0.04, 0.04, 1.06, 0.0, 10.0, 0.0, 0.0, 0.0, 1.0, 0.0]},
+    {'id': 'porcelain_glow', 'name': 'Porcelain Glow', 'icon': '💎', 'matrix': <double>[1.18, 0.06, 0.06, 0.0, 20.0, 0.06, 1.15, 0.06, 0.0, 16.0, 0.06, 0.06, 1.12, 0.0, 18.0, 0.0, 0.0, 0.0, 1.0, 0.0]},
+    {'id': 'idol_retouch', 'name': 'Idol Retouch', 'icon': '👑', 'matrix': <double>[1.22, 0.08, 0.05, 0.0, 25.0, 0.05, 1.18, 0.05, 0.0, 20.0, 0.03, 0.05, 1.10, 0.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]},
+    {'id': 'eye_sharpen', 'name': 'Eye & Lip Sharp', 'icon': '👁️', 'matrix': <double>[1.35, -0.1, -0.1, 0.0, 8.0, -0.1, 1.35, -0.1, 0.0, 8.0, -0.1, -0.1, 1.35, 0.0, 8.0, 0.0, 0.0, 0.0, 1.0, 0.0]},
+  ];
 
   final List<Map<String, String>> _effects = [
     {'id': 'none', 'name': 'None', 'icon': '✨'},
@@ -82,6 +92,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       (f) => f.id == _selectedColorFilterId,
       orElse: () => AppTheme.colorFilters.first,
     );
+
+    final selectedBeauty = _beautyModes.firstWhere(
+      (b) => b['id'] == _selectedBeautyModeId,
+      orElse: () => _beautyModes.first,
+    );
+
+    final List<double> activeMatrix = _selectedBeautyModeId == 'off'
+        ? activeFilter.matrix
+        : (selectedBeauty['matrix'] as List<double>);
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -201,7 +220,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                           children: [
                             // 1. Live Color Matrix Filter Overlay
                             ColorFiltered(
-                              colorFilter: ColorFilter.matrix(activeFilter.matrix),
+                              colorFilter: ColorFilter.matrix(activeMatrix),
                               child: _buildCameraPreview(),
                             ),
 
@@ -244,18 +263,74 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                       ),
                     ),
 
-                    // Floating Bottom Controls Dock
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceGlass,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Column(
+                    Flexible(
+                      flex: 1,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceGlass,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: SingleChildScrollView(
+                        child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Dedicated FACE BEAUTY & RETOUCHING Options
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildHeaderTitle('FACE BEAUTY & RETOUCHING'),
+                              Text(
+                                'Smooth: ${(_beautyIntensity * 100).toInt()}%',
+                                style: const TextStyle(color: AppTheme.secondaryAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            height: 42,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _beautyModes.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 10),
+                              itemBuilder: (context, index) {
+                                final beauty = _beautyModes[index];
+                                final isSelected = beauty['id'] == _selectedBeautyModeId;
+                                return InkWell(
+                                  onTap: () => setState(() => _selectedBeautyModeId = beauty['id'] as String),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppTheme.secondaryAccent : AppTheme.darkBackground,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected ? Colors.white : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(beauty['icon'] as String, style: const TextStyle(fontSize: 16)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          beauty['name'] as String,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
                           // Color Filter Selector
                           _buildHeaderTitle('COLOR FILTERS'),
                           const SizedBox(height: 6),
@@ -347,16 +422,19 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
 
               // Right Sidebar — Life4Cuts Live Photo Strip Preview Panel
               Container(
                 width: 280,
                 color: AppTheme.surfaceColor,
                 padding: const EdgeInsets.all(16),
-                child: Column(
+                child: SingleChildScrollView(
+                  child: Column(
                   children: [
                     const Text(
                       'LAYOUT STRIP PREVIEW',
@@ -395,7 +473,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                     const SizedBox(height: 16),
 
                     // Live Strip Visual Canvas Preview
-                    Expanded(
+                    SizedBox(
+                      height: 250,
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -507,23 +586,24 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                       ),
                       onPressed: session.status == SessionStatus.countingDown
                           ? null
-                          : () => sessionNotifier.triggerCountdown(colorMatrix: activeFilter.matrix),
+                          : () => sessionNotifier.triggerCountdown(colorMatrix: activeMatrix),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
 
-          // Countdown Overlay
-          if (session.status == SessionStatus.countingDown)
-            CountdownOverlay(count: sessionNotifier.countdownRemaining),
-        ],
-      );
-    },
-  ),
+        // Countdown Overlay
+        if (session.status == SessionStatus.countingDown)
+          CountdownOverlay(count: sessionNotifier.countdownRemaining),
+      ],
+    );
+  },
+),
 );
-  }
+}
 
   Widget _buildCameraPreview() {
     if (!_isInitCompleted || !_cameraService.isInitialized || _cameraService.controller == null) {
