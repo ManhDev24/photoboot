@@ -26,6 +26,7 @@ class CameraScreen extends ConsumerStatefulWidget {
 class _CameraScreenState extends ConsumerState<CameraScreen> {
   late CameraService _cameraService;
   bool _isInitCompleted = false;
+  bool _isFilterEnabled = true; // TikTok style ON/OFF Filter Toggle
   int _activeControlTab = 0; // 0: Beauty, 1: Color Filters, 2: AR Props
   String _selectedColorFilterId = 'original';
   String _selectedBeautyModeId = 'beauty_natural';
@@ -35,42 +36,40 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   void _applyWebCssFilter(String filterId) {
     if (kIsWeb) {
       String cssFilter = 'none';
-      switch (filterId) {
-        case 'b_w_film':
-          cssFilter = 'grayscale(100%) contrast(125%) brightness(95%)';
-          break;
-        case 'vintage_70s':
-          cssFilter = 'sepia(65%) contrast(115%) brightness(105%) hue-rotate(-15deg)';
-          break;
-        case 'cyber_neon':
-          cssFilter = 'hue-rotate(180deg) saturate(220%) contrast(130%)';
-          break;
-        case 'warm_sunset':
-          cssFilter = 'sepia(35%) saturate(160%) hue-rotate(-10deg) brightness(105%)';
-          break;
-        case 'ai_beauty_glow':
-        case 'porcelain_glow':
-          cssFilter = 'brightness(112%) contrast(98%) saturate(108%)';
-          break;
-        case 'korean_idol':
-        case 'idol_retouch':
-          cssFilter = 'brightness(115%) contrast(106%) saturate(115%)';
-          break;
-        case 'portrait_sharp':
-        case 'eye_sharpen':
-          cssFilter = 'contrast(140%) saturate(112%)';
-          break;
-        case 'beauty_natural':
-          cssFilter = 'brightness(106%) contrast(102%) saturate(104%)';
-          break;
-        default:
-          cssFilter = 'none';
+      if (_isFilterEnabled) {
+        switch (filterId) {
+          case 'b_w_film':
+            cssFilter = 'grayscale(100%) contrast(125%) brightness(95%)';
+            break;
+          case 'vintage_70s':
+            cssFilter = 'sepia(65%) contrast(115%) brightness(105%) hue-rotate(-15deg)';
+            break;
+          case 'cyber_neon':
+            cssFilter = 'hue-rotate(180deg) saturate(220%) contrast(130%)';
+            break;
+          case 'warm_sunset':
+            cssFilter = 'sepia(35%) saturate(160%) hue-rotate(-10deg) brightness(105%)';
+            break;
+          case 'ai_beauty_glow':
+          case 'porcelain_glow':
+            cssFilter = 'brightness(115%) contrast(98%) saturate(110%) blur(0.2px)';
+            break;
+          case 'korean_idol':
+          case 'idol_retouch':
+            cssFilter = 'brightness(118%) contrast(106%) saturate(115%)';
+            break;
+          case 'portrait_sharp':
+          case 'eye_sharpen':
+            cssFilter = 'contrast(140%) saturate(112%)';
+            break;
+          case 'beauty_natural':
+            cssFilter = 'brightness(108%) contrast(102%) saturate(106%)';
+            break;
+          default:
+            cssFilter = 'none';
+        }
       }
-      try {
-        debugPrint('Applied web CSS filter: $cssFilter');
-      } catch (e) {
-        debugPrint('Web filter log: $e');
-      }
+      debugPrint('Applied web filter: $cssFilter');
     }
   }
 
@@ -141,9 +140,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       orElse: () => _beautyModes.first,
     );
 
-    final List<double> activeMatrix = _selectedBeautyModeId == 'off'
-        ? activeFilter.matrix
-        : (selectedBeauty['matrix'] as List<double>);
+    final List<double> activeMatrix = !_isFilterEnabled
+        ? <double>[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+        : (_selectedBeautyModeId == 'off'
+            ? activeFilter.matrix
+            : (selectedBeauty['matrix'] as List<double>));
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -301,10 +302,53 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                                   ),
                                 ),
                               ),
-                          ],
+
+                              // 4. TikTok Style Filter ON/OFF Toggle Switch
+                              Positioned(
+                                top: 20,
+                                right: 20,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isFilterEnabled = !_isFilterEnabled;
+                                    });
+                                    _applyWebCssFilter(_isFilterEnabled
+                                        ? (_selectedBeautyModeId != 'off' ? _selectedBeautyModeId : _selectedColorFilterId)
+                                        : 'none');
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _isFilterEnabled ? AppTheme.secondaryAccent : Colors.grey[900],
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: _isFilterEnabled ? Colors.white : Colors.white24,
+                                        width: 2,
+                                      ),
+                                      boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _isFilterEnabled ? Icons.auto_awesome : Icons.blur_off,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _isFilterEnabled ? 'FILTER: ON' : 'FILTER: OFF',
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
 
                     Flexible(
                       flex: 1,

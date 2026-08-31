@@ -15,10 +15,25 @@ window.PhotoboothARRenderer = {
   },
 
   setVideoFilter: function(filterCss) {
-    const videoElements = document.getElementsByTagName('video');
-    for (let i = 0; i < videoElements.length; i++) {
-      videoElements[i].style.filter = filterCss || 'none';
-      videoElements[i].style.webkitFilter = filterCss || 'none';
+    this.applyGlobalCameraFilter(filterCss);
+  },
+
+  applyGlobalCameraFilter: function(cssFilter) {
+    let styleEl = document.getElementById('flt-camera-filter-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'flt-camera-filter-style';
+      document.head.appendChild(styleEl);
+    }
+    if (!cssFilter || cssFilter === 'none') {
+      styleEl.innerHTML = '';
+    } else {
+      styleEl.innerHTML = `
+        video, flt-platform-view, flt-platform-view-slot, [flt-platform-view], canvas {
+          filter: ${cssFilter} !important;
+          -webkit-filter: ${cssFilter} !important;
+        }
+      `;
     }
   },
 
