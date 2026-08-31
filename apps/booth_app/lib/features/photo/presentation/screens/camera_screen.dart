@@ -262,11 +262,19 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // 1. Live Color Matrix Filter Overlay
-                            ColorFiltered(
-                              colorFilter: ColorFilter.matrix(activeMatrix),
-                              child: _buildCameraPreview(),
-                            ),
+                            // 1. Live Camera Feed
+                            _buildCameraPreview(),
+
+                            // 1b. Real-time Live Filter Blend Overlay Layer
+                            if (_isFilterEnabled && (_selectedColorFilterId != 'original' || _selectedBeautyModeId != 'off'))
+                              IgnorePointer(
+                                child: ColorFiltered(
+                                  colorFilter: ColorFilter.matrix(activeMatrix),
+                                  child: Container(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                  ),
+                                ),
+                              ),
 
                             // 2. Realtime Visual AR Sticker Overlay
                             CustomPaint(
@@ -345,190 +353,193 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                                   ),
                                 ),
                               ),
+
+                              // 5. Floating Studio Control Dock Overlay
+                              Positioned(
+                                bottom: 12,
+                                left: 12,
+                                right: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xE60F172A),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: Colors.white24, width: 1.5),
+                                    boxShadow: const [BoxShadow(color: Colors.black87, blurRadius: 20)],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Studio Segmented Control Tabs
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          _buildTabButton(0, '🌸 BEAUTY'),
+                                          const SizedBox(width: 8),
+                                          _buildTabButton(1, '🎨 COLOR SHADERS'),
+                                          const SizedBox(width: 8),
+                                          _buildTabButton(2, '👑 AR PROPS'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+
+                                      // Tab Content View
+                                      if (_activeControlTab == 0) ...[
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            _buildHeaderTitle('SELECT BEAUTY MODE'),
+                                            Text(
+                                              'Smooth: ${(_beautyIntensity * 100).toInt()}%',
+                                              style: const TextStyle(color: AppTheme.secondaryAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        SizedBox(
+                                          height: 44,
+                                          child: ListView.separated(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: _beautyModes.length,
+                                            separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                            itemBuilder: (context, index) {
+                                              final beauty = _beautyModes[index];
+                                              final isSelected = beauty['id'] == _selectedBeautyModeId;
+                                              return InkWell(
+                                                onTap: () {
+                                                  setState(() => _selectedBeautyModeId = beauty['id'] as String);
+                                                  _applyWebCssFilter(beauty['id'] as String);
+                                                },
+                                                borderRadius: BorderRadius.circular(14),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected ? AppTheme.secondaryAccent : AppTheme.darkBackground,
+                                                    borderRadius: BorderRadius.circular(14),
+                                                    border: Border.all(
+                                                      color: isSelected ? Colors.white : Colors.white10,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Text(beauty['icon'] as String, style: const TextStyle(fontSize: 16)),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        beauty['name'] as String,
+                                                        style: TextStyle(
+                                                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ] else if (_activeControlTab == 1) ...[
+                                        _buildHeaderTitle('SELECT COLOR FILTER'),
+                                        const SizedBox(height: 6),
+                                        SizedBox(
+                                          height: 44,
+                                          child: ListView.separated(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: AppTheme.colorFilters.length,
+                                            separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                            itemBuilder: (context, index) {
+                                              final filter = AppTheme.colorFilters[index];
+                                              final isSelected = filter.id == _selectedColorFilterId;
+                                              return InkWell(
+                                                onTap: () {
+                                                  setState(() => _selectedColorFilterId = filter.id);
+                                                  _applyWebCssFilter(filter.id);
+                                                },
+                                                borderRadius: BorderRadius.circular(14),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected ? AppTheme.primaryAccent : AppTheme.darkBackground,
+                                                    borderRadius: BorderRadius.circular(14),
+                                                    border: Border.all(
+                                                      color: isSelected ? AppTheme.secondaryAccent : Colors.white10,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Text(filter.icon, style: const TextStyle(fontSize: 16)),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        filter.name,
+                                                        style: TextStyle(
+                                                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        _buildHeaderTitle('SELECT AR STICKER & PROP'),
+                                        const SizedBox(height: 6),
+                                        SizedBox(
+                                          height: 44,
+                                          child: ListView.separated(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: _effects.length,
+                                            separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                            itemBuilder: (context, index) {
+                                              final effect = _effects[index];
+                                              final isSelected = effect['id'] == session.activeEffectId;
+                                              return InkWell(
+                                                onTap: () => sessionNotifier.selectEffect(effect['id']!),
+                                                borderRadius: BorderRadius.circular(14),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected ? AppTheme.secondaryAccent : AppTheme.darkBackground,
+                                                    borderRadius: BorderRadius.circular(14),
+                                                    border: Border.all(
+                                                      color: isSelected ? Colors.white : Colors.white10,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Text(effect['icon']!, style: const TextStyle(fontSize: 16)),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        effect['name']!,
+                                                        style: TextStyle(
+                                                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
-
-                    Flexible(
-                      flex: 1,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceGlass,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Studio Segmented Control Tabs
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildTabButton(0, '🌸 BEAUTY'),
-                                const SizedBox(width: 8),
-                                _buildTabButton(1, '🎨 COLOR SHADERS'),
-                                const SizedBox(width: 8),
-                                _buildTabButton(2, '👑 AR PROPS'),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Tab Content View
-                            if (_activeControlTab == 0) ...[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildHeaderTitle('SELECT BEAUTY MODE'),
-                                  Text(
-                                    'Smooth: ${(_beautyIntensity * 100).toInt()}%',
-                                    style: const TextStyle(color: AppTheme.secondaryAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                height: 44,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _beautyModes.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                                  itemBuilder: (context, index) {
-                                    final beauty = _beautyModes[index];
-                                    final isSelected = beauty['id'] == _selectedBeautyModeId;
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() => _selectedBeautyModeId = beauty['id'] as String);
-                                        _applyWebCssFilter(beauty['id'] as String);
-                                      },
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? AppTheme.secondaryAccent : AppTheme.darkBackground,
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: isSelected ? Colors.white : Colors.white10,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Text(beauty['icon'] as String, style: const TextStyle(fontSize: 16)),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              beauty['name'] as String,
-                                              style: TextStyle(
-                                                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ] else if (_activeControlTab == 1) ...[
-                              _buildHeaderTitle('SELECT COLOR FILTER'),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                height: 44,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: AppTheme.colorFilters.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                                  itemBuilder: (context, index) {
-                                    final filter = AppTheme.colorFilters[index];
-                                    final isSelected = filter.id == _selectedColorFilterId;
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() => _selectedColorFilterId = filter.id);
-                                        _applyWebCssFilter(filter.id);
-                                      },
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? AppTheme.primaryAccent : AppTheme.darkBackground,
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: isSelected ? AppTheme.secondaryAccent : Colors.white10,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Text(filter.icon, style: const TextStyle(fontSize: 16)),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              filter.name,
-                                              style: TextStyle(
-                                                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ] else ...[
-                              _buildHeaderTitle('SELECT AR STICKER & PROP'),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                height: 44,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _effects.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                                  itemBuilder: (context, index) {
-                                    final effect = _effects[index];
-                                    final isSelected = effect['id'] == session.activeEffectId;
-                                    return InkWell(
-                                      onTap: () => sessionNotifier.selectEffect(effect['id']!),
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? AppTheme.secondaryAccent : AppTheme.darkBackground,
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: isSelected ? Colors.white : Colors.white10,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Text(effect['icon']!, style: const TextStyle(fontSize: 16)),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              effect['name']!,
-                                              style: TextStyle(
-                                                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
               // Right Sidebar — Life4Cuts Live Photo Strip Preview Panel
               Container(
@@ -722,18 +733,24 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     }
 
     final controller = _cameraService.controller!;
-    return ClipRect(
-      child: SizedOverflowBox(
-        size: Size.infinite,
-        child: FittedBox(
-          fit: BoxFit.cover,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ClipRect(
           child: SizedBox(
-            width: controller.value.previewSize?.height ?? 1280,
-            height: controller.value.previewSize?.width ?? 720,
-            child: CameraPreview(controller),
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxWidth *
+                    (controller.value.aspectRatio > 0 ? (1 / controller.value.aspectRatio) : (3 / 4)),
+                child: CameraPreview(controller),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

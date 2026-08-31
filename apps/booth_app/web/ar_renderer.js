@@ -14,8 +14,11 @@ window.PhotoboothARRenderer = {
     }
   },
 
+  activeCssFilter: 'none',
+
   setVideoFilter: function(filterCss) {
-    this.applyGlobalCameraFilter(filterCss);
+    this.activeCssFilter = filterCss || 'none';
+    this.applyGlobalCameraFilter(this.activeCssFilter);
   },
 
   applyGlobalCameraFilter: function(cssFilter) {
@@ -29,12 +32,26 @@ window.PhotoboothARRenderer = {
       styleEl.innerHTML = '';
     } else {
       styleEl.innerHTML = `
-        video, flt-platform-view, flt-platform-view-slot, [flt-platform-view], canvas {
+        video, flt-platform-view, flt-platform-view-slot, [flt-platform-view], canvas, .flt-glass-canvas {
           filter: ${cssFilter} !important;
           -webkit-filter: ${cssFilter} !important;
         }
       `;
     }
+
+    // Force inline style on every video tag found in document and shadow DOM
+    try {
+      const vElements = document.querySelectorAll('video');
+      vElements.forEach(function(v) {
+        if (cssFilter && cssFilter !== 'none') {
+          v.style.setProperty('filter', cssFilter, 'important');
+          v.style.setProperty('-webkit-filter', cssFilter, 'important');
+        } else {
+          v.style.removeProperty('filter');
+          v.style.removeProperty('-webkit-filter');
+        }
+      });
+    } catch(e) {}
   },
 
   spawnHeartParticles: function(count) {
