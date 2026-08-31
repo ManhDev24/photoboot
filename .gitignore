@@ -1,0 +1,9 @@
+# Environment & Build Artifacts
+node_modules/
+dist/
+build/
+.dart_tool/
+.pub-cache/
+.pub/
+*.log
+.DS_Store
