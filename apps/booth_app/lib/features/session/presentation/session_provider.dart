@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_storage_service.dart';
+import '../../../core/utils/image_filter_utils.dart';
 import '../../camera/data/platform_camera_service.dart';
 import '../../camera/domain/camera_service.dart';
 import '../../photo/domain/captured_photo.dart';
@@ -58,7 +59,7 @@ class SessionStateNotifier extends StateNotifier<PhotoSession> {
     state = state.copyWith(activeBackgroundId: bgId);
   }
 
-  void triggerCountdown({VoidCallback? onSnap}) {
+  void triggerCountdown({List<double>? colorMatrix, VoidCallback? onSnap}) {
     if (state.status == SessionStatus.countingDown || state.status == SessionStatus.capturing) {
       return;
     }
@@ -73,7 +74,12 @@ class SessionStateNotifier extends StateNotifier<PhotoSession> {
         timer.cancel();
         state = state.copyWith(status: SessionStatus.capturing);
         onSnap?.call();
-        await _captureCurrentFrame();
+        await captureCurrentFrameWithFilter(colorMatrix ?? [
+          1, 0, 0, 0, 0,
+          0, 1, 0, 0, 0,
+          0, 0, 1, 0, 0,
+          0, 0, 0, 1, 0,
+        ]);
       } else {
         // Trigger state rebuild for countdown UI
         state = state.copyWith();
@@ -81,12 +87,15 @@ class SessionStateNotifier extends StateNotifier<PhotoSession> {
     });
   }
 
-  Future<void> _captureCurrentFrame() async {
+  Future<void> captureCurrentFrameWithFilter(List<double> colorMatrix) async {
     final file = await _cameraService.capturePhoto();
     if (file != null) {
-      final bytes = await file.readAsBytes();
+      final rawBytes = await file.readAsBytes();
+      // Apply selected Color Matrix filter directly to captured photo bytes
+      final processedBytes = await ImageFilterUtils.applyColorMatrixFilter(rawBytes, colorMatrix);
+      
       final filename = 'photo_${const Uuid().v4()}.png';
-      final localPath = await LocalStorageService.saveImageBytes(bytes, filename);
+      final localPath = await LocalStorageService.saveImageBytes(processedBytes, filename);
 
       final captured = CapturedPhoto(
         id: const Uuid().v4(),

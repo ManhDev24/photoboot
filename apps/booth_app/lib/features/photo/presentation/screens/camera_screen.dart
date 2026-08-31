@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -415,15 +417,46 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                           itemCount: session.targetPhotoCount,
                           itemBuilder: (context, index) {
                             final bool isCaptured = index < session.photos.length;
+                            if (isCaptured) {
+                              final photo = session.photos[index];
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    kIsWeb || photo.localPath.startsWith('data:')
+                                        ? Image.network(photo.localPath, fit: BoxFit.cover)
+                                        : Image.file(File(photo.localPath), fit: BoxFit.cover),
+                                    Positioned(
+                                      top: 4,
+                                      left: 4,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xB3000000),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '#${index + 1}',
+                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
                             return Container(
                               decoration: BoxDecoration(
-                                color: isCaptured ? AppTheme.primaryAccent : Colors.grey[800],
+                                color: Colors.grey[850],
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white12),
                               ),
                               child: Center(
                                 child: Text(
-                                  isCaptured ? 'SHOT #${index + 1}' : '#${index + 1}',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                  '#${index + 1}',
+                                  style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                               ),
                             );
@@ -474,7 +507,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                       ),
                       onPressed: session.status == SessionStatus.countingDown
                           ? null
-                          : () => sessionNotifier.triggerCountdown(),
+                          : () => sessionNotifier.triggerCountdown(colorMatrix: activeFilter.matrix),
                     ),
                   ],
                 ),
